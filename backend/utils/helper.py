@@ -5,7 +5,7 @@ import os
 import re
 import glob
 from datetime import datetime
-import winreg
+import webbrowser
 
 # Application paths for Windows (primary locations)
 APPLICATIONS = {
@@ -13,7 +13,10 @@ APPLICATIONS = {
         'C:\\Program Files\\WindowsApps\\5A0681DE511B2_*\\WhatsApp.exe',
         'C:\\Users\\*\\AppData\\Local\\WhatsApp\\app-*\\WhatsApp.exe',
         'C:\\Users\\*\\AppData\\Local\\Microsoft\\WindowsApps\\WhatsApp.exe',
+        'whatsapp-web',  # Special flag for web version
     ],
+    'whatsapp-web': 'web://whatsapp',
+    'whatsapp web': 'web://whatsapp',
     'chrome': [
         'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
@@ -68,10 +71,17 @@ def find_application_path(app_name):
     
     paths = APPLICATIONS[app_name]
     if isinstance(paths, str):
+        # Handle web URLs and special schemes
+        if paths.startswith('web://') or paths.startswith('ms-'):
+            return paths
         paths = [paths]
     
     # Try each path with environment variable expansion and wildcard support
     for path in paths:
+        # Special handling for web version
+        if path == 'whatsapp-web':
+            return 'web://whatsapp.com'
+        
         # Expand environment variables
         expanded_path = os.path.expandvars(path)
         
@@ -85,54 +95,11 @@ def find_application_path(app_name):
         elif os.path.exists(expanded_path):
             return expanded_path
     
-    # Try Windows Registry as fallback
-    registry_path = find_app_in_registry(app_name)
-    if registry_path:
-        return registry_path
-    
-    return None
-
-def find_app_in_registry(app_name):
-    """
-    Try to find application path in Windows Registry
-    
-    Args:
-        app_name (str): Name of the application
-    
-    Returns:
-        str: Path to application or None
-    """
-    try:
-        # Common registry paths for applications
-        registry_paths = [
-            r'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths',
-            r'SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\App Paths',
-        ]
-        
-        for registry_path in registry_paths:
-            try:
-                reg_key = winreg.OpenKey(
-                    winreg.HKEY_LOCAL_MACHINE,
-                    registry_path
-                )
-                try:
-                    subkey, _ = winreg.QueryValueEx(reg_key, app_name)
-                    if os.path.exists(subkey):
-                        return subkey
-                except WindowsError:
-                    pass
-                finally:
-                    winreg.CloseKey(reg_key)
-            except WindowsError:
-                pass
-    except Exception as e:
-        pass
-    
     return None
 
 def open_application(app_name):
     """
-    Open an application by name
+    Open an application by name (with fallback to web version for WhatsApp)
     
     Args:
         app_name (str): Name of the application to open
@@ -140,22 +107,50 @@ def open_application(app_name):
     Returns:
         tuple: (success: bool, message: str)
     """
+    app_name_original = app_name
     app_name = app_name.lower().strip()
     app_path = find_application_path(app_name)
     
     if not app_path:
-        available_apps = ', '.join(sorted(APPLICATIONS.keys()))
-        return False, f'❌ Application "{app_name}" not found. Available: {available_apps}'
+        # Try to find close matches
+        if 'whatsapp' in app_name:
+            return open_whatsapp_web()
+        
+        available_apps = ', '.join(sorted(set([k.split('-')[0] for k in APPLICATIONS.keys()])))
+        return False, f'❌ Application "{app_name_original}" not found. Available: {available_apps}'
     
     try:
+        # Handle web URLs
+        if app_path.startswith('web://'):
+            webbrowser.open('https://web.whatsapp.com')
+            return True, '✅ Opening WhatsApp Web in your default browser...'
+        
+        # Handle Windows URI schemes
         if app_path.startswith('ms-'):
-            # Handle Windows URI schemes
             os.startfile(app_path)
-        else:
-            subprocess.Popen(app_path)
-        return True, f'✅ Opening {app_name}...'
+            return True, f'✅ Opening {app_name_original}...'
+        
+        # Handle regular executables
+        subprocess.Popen(app_path)
+        return True, f'✅ Opening {app_name_original}...'
     except Exception as e:
-        return False, f'❌ Error opening {app_name}: {str(e)}'
+        # Fallback for WhatsApp to web version
+        if 'whatsapp' in app_name:
+            return open_whatsapp_web()
+        return False, f'❌ Error opening {app_name_original}: {str(e)}'
+
+def open_whatsapp_web():
+    """
+    Open WhatsApp Web as fallback if desktop app not found
+    
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    try:
+        webbrowser.open('https://web.whatsapp.com')
+        return True, '✅ WhatsApp desktop not found. Opening WhatsApp Web in your browser instead...'
+    except Exception as e:
+        return False, f'❌ Error opening WhatsApp Web: {str(e)}'
 
 def process_voice_command(command):
     """
@@ -172,9 +167,9 @@ def process_voice_command(command):
     # Check for "open application" command
     if command_lower.startswith('open ') or 'open' in command_lower:
         # Extract application name
-        match = re.search(r'open\s+(\w+)', command_lower)
+        match = re.search(r'open\s+([\w\s-]+)', command_lower)
         if match:
-            app_name = match.group(1)
+            app_name = match.group(1).strip()
             success, message = open_application(app_name)
             return message
     
@@ -200,5 +195,5 @@ def process_voice_command(command):
         return '😊 You\'re welcome! Happy to help!'
     
     else:
-        return f'📝 You said: "{command}". How can I help you? Try "open chrome" or "what time is it?"'
+        return f'📝 You said: "{command}". How can I help you? Try "open whatsapp" or "what time is it?"'
 
