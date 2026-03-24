@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
     voiceBtn.addEventListener('click', function() {
         if (typeof toggleVoiceRecording === 'function') {
             toggleVoiceRecording();
+        } else {
+            showSystemMessage('❌ Voice recognition not initialized. Please refresh the page.');
         }
     });
 
@@ -17,6 +19,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (message) {
             processUserInput(message);
             messageInput.value = '';
+        } else {
+            showSystemMessage('⚠️ Please enter a message or use voice input.');
         }
     });
 
@@ -30,6 +34,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Show welcome message
+    setTimeout(() => {
+        showSystemMessage('👋 Welcome! Try saying "open whatsapp" or "what time is it?"');
+    }, 500);
 });
 
 function processUserInput(message) {
@@ -46,7 +55,12 @@ function processUserInput(message) {
             command: message
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.status === 'success') {
             addMessageToChat(data.response, 'assistant-message');
@@ -61,12 +75,13 @@ function processUserInput(message) {
                 saveMessage(message, data.response);
             }
         } else {
-            addMessageToChat('Error: ' + (data.error || 'Unknown error'), 'assistant-message');
+            const errorMsg = data.error || 'An unknown error occurred';
+            addMessageToChat('❌ Error: ' + errorMsg, 'assistant-message');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        addMessageToChat('Communication error. Please try again.', 'assistant-message');
+        addMessageToChat('❌ Communication error. Please check that the server is running at localhost:5000', 'assistant-message');
     });
 }
 

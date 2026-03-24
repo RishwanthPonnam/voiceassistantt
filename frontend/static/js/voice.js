@@ -6,7 +6,7 @@ let isListening = false;
 function initializeSpeechRecognition() {
     if (!SpeechRecognition) {
         console.error('Speech Recognition API not supported in this browser');
-        showSystemMessage('Speech recognition not supported in your browser');
+        showSystemMessage('⚠️ Speech recognition not supported in your browser. Please use Chrome, Firefox, or Edge.');
         return;
     }
 
@@ -18,23 +18,42 @@ function initializeSpeechRecognition() {
     recognition.onstart = function() {
         isListening = true;
         updateVoiceButtonUI();
+        showSystemMessage('🎤 Listening... Speak now!');
     };
 
     recognition.onresult = function(event) {
         let transcript = '';
+        let isFinal = false;
+        
         for (let i = event.resultIndex; i < event.results.length; i++) {
             transcript += event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                isFinal = true;
+            }
         }
 
-        if (event.isFinal) {
-            document.getElementById('messageInput').value = transcript;
-            processUserInput(transcript);
+        // Show interim results in input field
+        document.getElementById('messageInput').value = transcript;
+        
+        // If final result, process it
+        if (isFinal) {
+            setTimeout(() => {
+                processUserInput(transcript);
+            }, 500);
         }
     };
 
     recognition.onerror = function(event) {
         console.error('Speech Recognition Error:', event.error);
-        showSystemMessage('Error during voice input: ' + event.error);
+        let errorMsg = '❌ Voice input error: ' + event.error;
+        
+        if (event.error === 'no-speech') {
+            errorMsg = '❌ No speech detected. Please try again and speak clearly.';
+        } else if (event.error === 'network') {
+            errorMsg = '❌ Network error. Check your internet connection.';
+        }
+        
+        showSystemMessage(errorMsg);
         isListening = false;
         updateVoiceButtonUI();
     };
@@ -52,9 +71,15 @@ function toggleVoiceRecording() {
 
     if (isListening) {
         recognition.stop();
+        showSystemMessage('🛑 Stopped listening.');
     } else {
         document.getElementById('messageInput').value = '';
-        recognition.start();
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error('Error starting recognition:', e);
+            showSystemMessage('❌ Error starting voice input. Please try again.');
+        }
     }
 }
 
@@ -69,7 +94,7 @@ function updateVoiceButtonUI() {
     } else {
         btn.classList.remove('recording');
         icon.textContent = '🎤';
-        btn.childNodes[1].textContent = 'Start Recording';
+        btn.textContent = '🎤 Start Recording';
     }
 }
 
