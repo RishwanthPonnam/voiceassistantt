@@ -7,6 +7,7 @@ function initializeSpeechRecognition() {
     if (!SpeechRecognition) {
         console.error('Speech Recognition API not supported in this browser');
         showSystemMessage('⚠️ Speech recognition not supported in your browser. Please use Chrome, Firefox, or Edge.');
+        logDebug('❌ Speech Recognition API not available', 'error');
         return;
     }
 
@@ -15,10 +16,13 @@ function initializeSpeechRecognition() {
     recognition.interimResults = true;
     recognition.language = 'en-US';
 
+    logDebug('✓ Speech Recognition initialized', 'info');
+
     recognition.onstart = function() {
         isListening = true;
         updateVoiceButtonUI();
         showSystemMessage('🎤 Listening... Speak now!');
+        logDebug('🎤 Recording started', 'info');
     };
 
     recognition.onresult = function(event) {
@@ -35,8 +39,13 @@ function initializeSpeechRecognition() {
         // Show interim results in input field
         document.getElementById('messageInput').value = transcript;
         
+        if (!isFinal) {
+            logDebug(`📝 Interim: "${transcript}"`, 'info');
+        }
+        
         // If final result, process it
         if (isFinal) {
+            logDebug(`✓ Final result: "${transcript}"`, 'info');
             setTimeout(() => {
                 processUserInput(transcript);
             }, 500);
@@ -54,6 +63,7 @@ function initializeSpeechRecognition() {
         }
         
         showSystemMessage(errorMsg);
+        logDebug(`❌ Error: ${event.error}`, 'error');
         isListening = false;
         updateVoiceButtonUI();
     };
@@ -61,24 +71,29 @@ function initializeSpeechRecognition() {
     recognition.onend = function() {
         isListening = false;
         updateVoiceButtonUI();
+        logDebug('⏹️ Recording stopped', 'info');
     };
 }
 
 function toggleVoiceRecording() {
     if (!recognition) {
+        logDebug('⚠️ Recognition not initialized, initializing now...', 'warn');
         initializeSpeechRecognition();
     }
 
     if (isListening) {
         recognition.stop();
         showSystemMessage('🛑 Stopped listening.');
+        logDebug('🛑 User stopped recording', 'info');
     } else {
         document.getElementById('messageInput').value = '';
         try {
             recognition.start();
+            logDebug('🎤 Starting voice recognition...', 'info');
         } catch (e) {
             console.error('Error starting recognition:', e);
             showSystemMessage('❌ Error starting voice input. Please try again.');
+            logDebug(`❌ Error starting recognition: ${e.message}`, 'error');
         }
     }
 }

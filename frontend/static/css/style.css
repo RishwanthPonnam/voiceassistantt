@@ -266,3 +266,128 @@ footer {
         text-align: center;
     }
 }
+
+/* Debug Console */
+.debug-toggle {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 6px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: all 0.3s ease;
+}
+
+.debug-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.debug-console {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 400px;
+    max-height: 300px;
+    background: #1e1e1e;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+.debug-header {
+    background: #2d2d2d;
+    padding: 10px 15px;
+    border-bottom: 1px solid #667eea;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #667eea;
+}
+
+.debug-header h4 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    color: #667eea;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-close:hover {
+    color: #764ba2;
+}
+
+.debug-log {
+    background: #1e1e1e;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+    max-height: 200px;
+}
+
+.debug-log p {
+    margin: 3px 0;
+    line-height: 1.4;
+}
+
+.debug-info {
+    color: #00ff00;
+}
+
+.debug-warn {
+    color: #ffff00;
+}
+
+.debug-error {
+    color: #ff0000;
+}
+
+#debugClear {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin: 8px;
+    width: calc(100% - 16px);
+}
+
+#debugClear:hover {
+    background: #5568d3;
+}
+
+.btn-small {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.btn-small:hover {
+    background: #5568d3;
+}
+
+@media (max-width: 500px) {
+    .debug-console {
+        width: 90%;
+        right: 5%;
+        bottom: 100px;
+    }
+}

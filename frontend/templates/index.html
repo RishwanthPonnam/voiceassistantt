@@ -11,6 +11,7 @@
         <header>
             <h1>🎤 Voice Assistant</h1>
             <p>Your intelligent voice-based companion</p>
+            <button id="debugToggle" class="debug-toggle">🔧 Debug Console</button>
         </header>
 
         <main>
@@ -43,12 +44,24 @@
             <section class="command-hints">
                 <h3>💡 Example Commands:</h3>
                 <ul>
-                    <li>"Open whatsapp"</li>
                     <li>"Open chrome"</li>
+                    <li>"Open excel"</li>
                     <li>"What time is it?"</li>
                     <li>"What is today's date?"</li>
                     <li>"Help"</li>
                 </ul>
+            </section>
+
+            <!-- Debug Console -->
+            <section id="debugConsole" class="debug-console" style="display: none;">
+                <div class="debug-header">
+                    <h4>🔧 Debug Console</h4>
+                    <button id="debugClose" class="btn-close">✕</button>
+                </div>
+                <div id="debugLog" class="debug-log">
+                    <p class="debug-info">Debug console ready...</p>
+                </div>
+                <button id="debugClear" class="btn-small">Clear Log</button>
             </section>
         </main>
 
@@ -61,5 +74,6 @@
     <script src="{{ url_for('static', filename='js/commands.js') }}"></script>
     <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
     <script src="{{ url_for('static', filename='js/messages.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/debug.js') }}"></script>
 </body>
 </html>

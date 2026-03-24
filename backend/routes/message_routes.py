@@ -1,6 +1,13 @@
 from flask import Blueprint, request, jsonify
-from models.message_model import db, Message
 from datetime import datetime
+import sys
+from pathlib import Path
+
+# Add backend directory to Python path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
+from models.message_model import db, Message
 
 message_bp = Blueprint('messages', __name__, url_prefix='/api/messages')
 

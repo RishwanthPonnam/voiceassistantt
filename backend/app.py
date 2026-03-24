@@ -1,6 +1,13 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import os
+import sys
+from pathlib import Path
+
+# Add backend directory to Python path
+backend_dir = Path(__file__).parent
+sys.path.insert(0, str(backend_dir))
+
 from routes.message_routes import message_bp
 from routes.voice_routes import voice_bp
 from models.message_model import db, Message
