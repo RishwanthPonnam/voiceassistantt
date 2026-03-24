@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant Web</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎤 Voice Assistant</h1>
+            <p>Your intelligent voice-based companion</p>
+        </header>
+
+        <main>
+            <section class="chat-container">
+                <div id="chatbox" class="chatbox">
+                    <div class="message system-message">
+                        <p>Welcome to Voice Assistant! Click the microphone or type a message to get started.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="input-section">
+                <div class="input-controls">
+                    <button id="voiceBtn" class="btn btn-primary">
+                        <span id="voiceIcon">🎤</span>
+                        Start Recording
+                    </button>
+                    <div class="text-input">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            placeholder="Type your message or use voice..."
+                            autocomplete="off"
+                        >
+                        <button id="sendBtn" class="btn btn-send">Send</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="command-hints">
+                <h3>Available Commands:</h3>
+                <ul>
+                    <li>"What time is it?"</li>
+                    <li>"Tell me about the weather"</li>
+                    <li>"Help" - Get assistance</li>
+                </ul>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Voice Assistant Web. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/voice.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/commands.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/messages.js') }}"></script>
+</body>
+</html>
