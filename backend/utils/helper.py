@@ -6,6 +6,21 @@ import re
 import glob
 from datetime import datetime
 import webbrowser
+import time
+import threading
+
+# Try importing optional dependencies for WhatsApp automation
+try:
+    import pyperclip
+    PYPERCLIP_AVAILABLE = True
+except ImportError:
+    PYPERCLIP_AVAILABLE = False
+
+try:
+    from pynput.keyboard import Controller, Key
+    PYNPUT_AVAILABLE = True
+except ImportError:
+    PYNPUT_AVAILABLE = False
 
 # Application paths for Windows (primary locations)
 APPLICATIONS = {
@@ -148,9 +163,96 @@ def open_whatsapp_web():
     """
     try:
         webbrowser.open('https://web.whatsapp.com')
-        return True, '✅ WhatsApp desktop not found. Opening WhatsApp Web in your browser instead...'
+        return True, '✅ WhatsApp Web opened! Please log in if needed...'
     except Exception as e:
         return False, f'❌ Error opening WhatsApp Web: {str(e)}'
+
+def send_whatsapp_message(contact_name, message_text):
+    """
+    Send a message through WhatsApp Web
+    
+    Args:
+        contact_name (str): Name of the contact to message
+        message_text (str): Text message to send
+    
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    if not PYPERCLIP_AVAILABLE or not PYNPUT_AVAILABLE:
+        return False, '❌ WhatsApp automation not available. Please install required packages: pyperclip and pynput'
+    
+    try:
+        keyboard = Controller()
+        
+        # Ensure WhatsApp Web is open
+        webbrowser.open('https://web.whatsapp.com')
+        time.sleep(2)
+        
+        # Click on search box (using keyboard shortcut)
+        keyboard.hotkey('ctrl', 'f')
+        time.sleep(0.5)
+        
+        # Type contact name
+        pyperclip.copy(contact_name)
+        keyboard.hotkey('ctrl', 'v')
+        time.sleep(1)
+        
+        # Press Enter to select first result
+        keyboard.press(Key.enter)
+        keyboard.release(Key.enter)
+        time.sleep(1)
+        
+        # Click on message input field
+        keyboard.hotkey('tab')
+        time.sleep(0.5)
+        
+        # Type and send message
+        pyperclip.copy(message_text)
+        keyboard.hotkey('ctrl', 'v')
+        time.sleep(0.5)
+        
+        # Send message (Ctrl+Enter or just Enter)
+        keyboard.hotkey('ctrl', Key.enter)
+        time.sleep(1)
+        
+        return True, f'✅ Message sent to {contact_name}: "{message_text}"'
+    except Exception as e:
+        return False, f'❌ Error sending WhatsApp message: {str(e)}'
+
+def parse_whatsapp_command(command):
+    """
+    Parse WhatsApp-specific commands to extract contact and message
+    
+    Args:
+        command (str): Voice command text
+    
+    Returns:
+        tuple: (contact_name, message_text) or (None, None) if not a valid command
+    """
+    # Pattern: "message [contact] [message]" or "send message to [contact] [message]"
+    
+    # Try pattern: "message to [contact] [message]"
+    match = re.search(r'message\s+to\s+(.+?)\s+(.+)', command, re.IGNORECASE)
+    if match:
+        contact = match.group(1).strip()
+        message = match.group(2).strip()
+        return contact, message
+    
+    # Try pattern: "send [message] to [contact]"
+    match = re.search(r'send\s+(.+?)\s+to\s+(.+)', command, re.IGNORECASE)
+    if match:
+        message = match.group(1).strip()
+        contact = match.group(2).strip()
+        return contact, message
+    
+    # Try pattern: "[contact] [message]" (after "open whatsapp")
+    match = re.search(r'([A-Za-z\s]+)\s+(.+)', command)
+    if match and len(match.group(1).split()) <= 3:  # Assume contact name is max 3 words
+        contact = match.group(1).strip()
+        message = match.group(2).strip()
+        return contact, message
+    
+    return None, None
 
 def process_voice_command(command):
     """
@@ -164,12 +266,37 @@ def process_voice_command(command):
     """
     command_lower = command.lower().strip()
     
-    # Check for "open application" command
+    # Check for WhatsApp messaging commands
+    if 'whatsapp' in command_lower and ('message' in command_lower or 'send' in command_lower or 'text' in command_lower):
+        # Extract contact and message
+        task = command_lower.replace('open whatsapp', '').replace('and', '').strip()
+        contact, message = parse_whatsapp_command(task)
+        
+        if contact and message:
+            # Open WhatsApp and send message
+            success, result = open_whatsapp_web()
+            if success:
+                # Give user time to see WhatsApp opened
+                time.sleep(2)
+                
+                # Now try to send the message
+                send_success, send_msg = send_whatsapp_message(contact, message)
+                if send_success:
+                    return f'✅ WhatsApp opened and message sent to {contact}: "{message}"'
+                else:
+                    return f'⚠️ WhatsApp opened but could not send automatically. Please send message manually to {contact}: "{message}"'
+            return result
+        else:
+            return '📱 WhatsApp message command detected. Please say: "message [contact name] [your message]"'
+    
+    # Check for simple "open application" command
     if command_lower.startswith('open ') or 'open' in command_lower:
         # Extract application name
         match = re.search(r'open\s+([\w\s-]+)', command_lower)
         if match:
             app_name = match.group(1).strip()
+            # Remove extra words
+            app_name = re.sub(r'\s+(and|to|message|text).*', '', app_name).strip()
             success, message = open_application(app_name)
             return message
     
@@ -189,11 +316,11 @@ def process_voice_command(command):
         return f'📅 Today is {current_date}'
     
     elif 'help' in command_lower:
-        return '📖 You can ask me to: open applications (whatsapp, chrome, teams, outlook, excel, word, etc), tell time/date, or just chat with me!'
+        return '📖 You can: open applications (whatsapp, chrome, teams, etc), send WhatsApp messages (say "message [contact] [message]"), check time/date, or just chat!'
     
     elif 'thank' in command_lower:
         return '😊 You\'re welcome! Happy to help!'
     
     else:
-        return f'📝 You said: "{command}". How can I help you? Try "open whatsapp" or "what time is it?"'
+        return f'📝 You said: "{command}". Try: "open whatsapp message John hello" or "what time is it?"'
 
